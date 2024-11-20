@@ -5,8 +5,8 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() {
   runApp(MyApp());
@@ -40,25 +40,24 @@ class MyAppState extends ChangeNotifier {
 
     if (Platform.isAndroid) {
       AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-      deviceData['Brand'] = androidInfo.brand ?? 'Unknown';
-      deviceData['Model'] = androidInfo.model ?? 'Unknown';
-      deviceData['Device'] = androidInfo.device ?? 'Unknown';
-      deviceData['Hardware'] = androidInfo.hardware ?? 'Unknown';
-      deviceData['Android Version'] = androidInfo.version.release ?? 'Unknown';
-      deviceData['Screen'] = androidInfo.display ?? 'Unknown';
+      deviceData['Brand'] = androidInfo.brand;
+      deviceData['Model'] = androidInfo.model;
+      deviceData['Device'] = androidInfo.device;
+      deviceData['Hardware'] = androidInfo.hardware;
+      deviceData['Android Version'] = androidInfo.version.release;
+      deviceData['Screen'] = androidInfo.display;
     } else if (Platform.isIOS) {
       IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-      deviceData['Modelo'] = iosInfo.utsname.machine ?? 'Unknown';
-      deviceData['Nombre'] = iosInfo.name ?? 'Unknown';
-      deviceData['Sistema Operativo'] = iosInfo.systemName ?? 'Unknown';
-      deviceData['Versión'] = iosInfo.systemVersion ?? 'Unknown';
+      deviceData['Modelo'] = iosInfo.utsname.machine;
+      deviceData['Nombre'] = iosInfo.name;
+      deviceData['Sistema Operativo'] = iosInfo.systemName;
+      deviceData['Versión'] = iosInfo.systemVersion;
     }
     return deviceData;
   }
 
   Future<void> fetchAIResponse() async {
-    const apiKey =
-        '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'; // Reemplaza con tu API key
+    String apiKey = dotenv.env['API_KEY'] ?? 'No API Key Found';
     final url = Uri.parse('https://api.openai.com/v1/chat/completions');
     int retryCount = 0;
     const maxRetries = 3;
