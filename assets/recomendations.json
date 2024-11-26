@@ -1,0 +1,49 @@
+{
+  "smartphone_care_tips": {
+    "battery": {
+      "recommendations": [
+        "Mantén las actualizaciones de software al día para optimizar el uso de la batería.",
+        "Usa el modo oscuro si está disponible para reducir el consumo de energía en pantallas OLED.",
+        "Desactiva el Wi-Fi o los datos móviles cuando no los estés utilizando.",
+        "Configura el ahorro de batería en aplicaciones de alto consumo energético.",
+        "Evita cargar tu dispositivo en superficies blandas que puedan causar sobrecalentamiento."
+      ]
+    },
+    "ram": {
+      "recommendations": [
+        "Desactiva servicios innecesarios como la localización constante en apps.",
+        "Evita usar múltiples aplicaciones intensivas al mismo tiempo.",
+        "Elimina aplicaciones que no uses regularmente para liberar recursos.",
+        "Usa aplicaciones de gestión de memoria para identificar procesos innecesarios.",
+        "Evita usar fondos de pantalla animados, ya que consumen más RAM."
+      ]
+    },
+    "screen": {
+      "recommendations": [
+        "Usa una funda protectora que cubra los bordes de la pantalla.",
+        "Evita limpiar la pantalla con líquidos directamente; usa un paño ligeramente húmedo.",
+        "Configura el filtro de luz azul para uso nocturno para reducir el desgaste ocular.",
+        "No coloques el teléfono boca abajo en superficies rugosas para evitar rayones.",
+        "Usa gestos de navegación en lugar de botones en pantalla para prolongar la vida útil de los píxeles."
+      ]
+    },
+    "storage": {
+      "recommendations": [
+        "Realiza copias de seguridad periódicas de tus datos en un disco externo o en la nube.",
+        "Configura tus aplicaciones para guardar automáticamente en la tarjeta SD (si es compatible).",
+        "Monitorea las carpetas de descargas y elimina archivos grandes o duplicados regularmente.",
+        "Evita instalar aplicaciones desde fuentes no verificadas que puedan incluir archivos corruptos.",
+        "Desactiva la descarga automática de medios en aplicaciones de mensajería."
+      ]
+    },
+    "operating_system": {
+      "recommendations": [
+        "Mantén siempre actualizado el sistema operativo para obtener los últimos parches de seguridad.",
+        "Elimina las actualizaciones beta después de probarlas si no son estables.",
+        "Reinicia tu dispositivo regularmente para evitar que el sistema se sature.",
+        "Desactiva las funciones experimentales si no son necesarias para evitar inestabilidad.",
+        "Consulta las notas de la versión antes de actualizar para saber qué cambios esperar."
+      ]
+    }
+  }
+}
