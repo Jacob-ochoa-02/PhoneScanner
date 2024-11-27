@@ -5,16 +5,19 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:math';
 import 'dart:io';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   try {
     await dotenv.load(fileName: ".env");
     print("Archivo .env cargado correctamente.");
-    print("Clave API: ${dotenv.env['API_KEY']}");
   } catch (e) {
     print("Error cargando el archivo .env: $e");
   }
+
   runApp(MyApp());
 }
 
@@ -45,33 +48,38 @@ class MyAppState extends ChangeNotifier {
   String screenR = '';
   String storage = '';
   String operatingSystem = '';
+  final random = Random();
 
   Future<Map<String, String>> getDeviceInfo() async {
     DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
     Map<String, String> deviceData = {};
 
-    if (Platform.isAndroid) {
-      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-      deviceData['Brand'] = androidInfo.brand;
-      deviceData['Model'] = androidInfo.model;
-      deviceData['Device'] = androidInfo.device;
-      deviceData['Hardware'] = androidInfo.hardware;
-      deviceData['Android Version'] = androidInfo.version.release;
-      deviceData['Screen'] = androidInfo.display;
-    } else if (Platform.isIOS) {
-      IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-      deviceData['Modelo'] = iosInfo.utsname.machine;
-      deviceData['Nombre'] = iosInfo.name;
-      deviceData['Sistema Operativo'] = iosInfo.systemName;
-      deviceData['Versión'] = iosInfo.systemVersion;
+    try {
+      if (Platform.isAndroid) {
+        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+        deviceData['Marca'] = androidInfo.brand;
+        deviceData['Modelo'] = androidInfo.model;
+        deviceData['Dispositivo'] = androidInfo.device;
+        deviceData['Hardware'] = androidInfo.hardware;
+        deviceData['Versión Android'] = androidInfo.version.release;
+        deviceData['Pantalla'] = androidInfo.display;
+      } else if (Platform.isIOS) {
+        IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+        deviceData['Modelo'] = iosInfo.utsname.machine;
+        deviceData['Nombre'] = iosInfo.name;
+        deviceData['Sistema Operativo'] = iosInfo.systemName;
+        deviceData['Versión'] = iosInfo.systemVersion;
+      }
+    } catch (e) {
+      print('Error obteniendo información del dispositivo: $e');
     }
+
     return deviceData;
   }
 
   Future<void> fetchAIResponse({int retries = 3}) async {
     String apiKey = dotenv.env["API_KEY"] ?? 'No API Key Found';
-    print("Clave API: $apiKey");
-    String baseUrl = 'https://api.openai.com/v1/completions';
+    String baseUrl = 'https://api.openai.com/v1/chat/completions';
 
     if (apiKey == 'No API Key Found') {
       aiResponse =
@@ -81,14 +89,21 @@ class MyAppState extends ChangeNotifier {
     }
 
     try {
-      // Obtener la información del dispositivo
       Map<String, String> deviceInfo = await getDeviceInfo();
       String deviceDetails =
           deviceInfo.entries.map((e) => "${e.key}: ${e.value}").join(", ");
 
-      String prompt =
-          '''Basándote en las siguientes características del dispositivo: $deviceDetails,proporciona recomendaciones específicas y personalizadas para:1. Optimizar la duración de la batería.2. Mantener el rendimiento del dispositivo.3. Proteger el hardware.4. Gestionar el almacenamiento.Por favor, da recomendaciones concisas y prácticas.''';
-      print(prompt);
+      String prompt = '''
+      Basándote en las siguientes características del dispositivo: $deviceDetails, 
+      proporciona recomendaciones específicas y personalizadas para:
+      1. Optimizar la duración de la batería
+      2. Mantener el rendimiento del dispositivo
+      3. Proteger el hardware
+      4. Gestionar el almacenamiento
+
+      Por favor, da recomendaciones concisas y prácticas.
+      ''';
+
       var response = await http.post(
         Uri.parse(baseUrl),
         headers: {
@@ -109,34 +124,43 @@ class MyAppState extends ChangeNotifier {
           'temperature': 0.7,
         }),
       );
-      print(response);
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         aiResponse = data['choices'][0]['message']['content'];
       } else {
-        aiResponse = '';
+        aiResponse = 'Error en obtención de datos';
       }
     } catch (e) {
-      aiResponse = 'Error durante la solicitud: $e';
-      print('Respuesta de la API: $aiResponse');
+      print('Error durante la solicitud: $e');
+      aiResponse = 'Error cargando recomendaciones: $e';
     } finally {
-      if (aiResponse == '') {
-        myResponse = await rootBundle.loadString('assets/recomendations.json');
-        final jsonData = json.decode(myResponse);
-        batteryR =
-            jsonData['smartphone_care_tips']['battery']['recommendations'][0];
-        ramR = jsonData['smartphone_care_tips']['ram']['recommendations'][0];
-        screenR =
-            jsonData['smartphone_care_tips']['screen']['recommendations'][0];
-        storage =
-            jsonData['smartphone_care_tips']['storage']['recommendations'][0];
-        operatingSystem = jsonData['smartphone_care_tips']['operating_system']
-            ['recommendations'][0];
-        aiResponse =
-            'Batería: $batteryR\n\nRam: $ramR\n\nPantalla: $screenR\n\nAlmacenamiento: $storage\n\nSistema Operativo: $operatingSystem';
+      if (aiResponse.isEmpty || aiResponse.startsWith('Error')) {
+        try {
+          myResponse =
+              await rootBundle.loadString('assets/recomendations.json');
+          final jsonData = json.decode(myResponse);
+          batteryR = jsonData['smartphone_care_tips']['battery']
+              ['recommendations'][random.nextInt(5)];
+          ramR = jsonData['smartphone_care_tips']['ram']['recommendations']
+              [random.nextInt(5)];
+          screenR = jsonData['smartphone_care_tips']['screen']
+              ['recommendations'][random.nextInt(5)];
+          storage = jsonData['smartphone_care_tips']['storage']
+              ['recommendations'][random.nextInt(5)];
+          operatingSystem = jsonData['smartphone_care_tips']['operating_system']
+              ['recommendations'][random.nextInt(5)];
+
+          aiResponse =
+              'Batería: $batteryR\nRam: $ramR\nPantalla: $screenR\nAlmacenamiento: $storage\nSistema Operativo: $operatingSystem';
+        } catch (e) {
+          print('Error cargando recomendaciones locales: $e');
+          aiResponse = 'Error cargando recomendaciones locales: $e';
+        }
       }
+
+      notifyListeners();
     }
-    notifyListeners();
   }
 }
 
@@ -144,7 +168,7 @@ class HeaderOfPage extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Color.fromRGBO(234, 227, 201, 1) // Color del fondo
+      ..color = Color.fromRGBO(234, 227, 201, 1)
       ..style = PaintingStyle.fill;
 
     final path = Path();
@@ -161,27 +185,21 @@ class HeaderOfPage extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// ignore: must_be_immutable
 class MyHomePage extends StatelessWidget {
   static const platform = MethodChannel('com.example.device/health');
-  String? deviceYear;
   final TextEditingController yearController = TextEditingController();
 
-  // Aquí colocamos el método sendYearToPython
   Future<void> sendYearToPython(BuildContext context, String year) async {
     try {
-      // Datos que se enviarán al servidor
       final data = {
-        'edad_dispositivo': int.parse(year), // Convierte el año a entero
-        'estado_bateria': 80, // Ejemplo de datos adicionales
-        'rendimiento': 90, // Ejemplo de datos adicionales
-        'frecuencia_reparacion': 0 // Ejemplo de datos adicionales
+        'edad_dispositivo': int.parse(year),
+        'estado_bateria': 80,
+        'rendimiento': 90,
+        'frecuencia_reparacion': 0
       };
 
-      // URL del servidor Python
-      final url = Uri.parse('http://127.0.0.1:5000/predict');
+      final url = Uri.parse('http://192.168.1.7:5000/predict');
 
-      // Realizar la solicitud POST
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -189,17 +207,18 @@ class MyHomePage extends StatelessWidget {
       );
 
       if (response.statusCode == 200) {
-        // Manejar la respuesta
         final responseData = jsonDecode(response.body);
         final recommendation = responseData['recomendacion'];
 
-        // Mostrar recomendación en la app
-        print("Recomendación: $recommendation");
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Recomendación: $recommendation")),
+          SnackBar(content: Text("Recomendación de Backend: $recommendation")),
         );
+
+        var appState = context.read<MyAppState>();
+        appState.aiResponse += "\n\nRecomendaciones IA: $recommendation";
+
+        await appState.fetchAIResponse();
       } else {
-        // Manejar errores
         print("Error: ${response.body}");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error: ${response.body}")),
@@ -229,7 +248,7 @@ class MyHomePage extends StatelessWidget {
 
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(200), // Altura del AppBar
+        preferredSize: Size.fromHeight(200),
         child: CustomPaint(
           painter: HeaderOfPage(),
           child: AppBar(
@@ -238,7 +257,7 @@ class MyHomePage extends StatelessWidget {
               height: 100,
             ),
             centerTitle: true,
-            backgroundColor: Colors.transparent, // Fondo transparente
+            backgroundColor: Colors.transparent,
             toolbarHeight: 200,
           ),
         ),
@@ -272,7 +291,7 @@ class MyHomePage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Device Information:',
+                            'Información del Dispositivo:',
                             style: Theme.of(context)
                                 .textTheme
                                 .headlineSmall
@@ -303,7 +322,6 @@ class MyHomePage extends StatelessWidget {
               },
             ),
             const SizedBox(height: 20),
-            // Campo para ingresar el año de obtención del dispositivo
             TextField(
               controller: yearController,
               keyboardType: TextInputType.number,
@@ -315,10 +333,9 @@ class MyHomePage extends StatelessWidget {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                final year = yearController.text; // Obtener el año ingresado
+                final year = yearController.text;
                 if (year.isNotEmpty && int.tryParse(year) != null) {
-                  sendYearToPython(context,
-                      year); // Llama a la función para enviar los datos
+                  sendYearToPython(context, year);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -330,7 +347,7 @@ class MyHomePage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              appState.aiResponse,
+              'Recomendaciones IA\n${appState.aiResponse}',
               style: TextStyle(fontSize: 16, color: Colors.black87),
             ),
           ],
