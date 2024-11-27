@@ -1,10 +1,11 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
 import pandas as pd
 
 app = Flask(__name__)
+CORS(app)  # Permitir solicitudes desde cualquier origen
 
 # Datos ficticios para el modelo
 data = {
