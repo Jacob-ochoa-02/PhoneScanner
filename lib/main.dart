@@ -152,7 +152,7 @@ class MyAppState extends ChangeNotifier {
               ['recommendations'][random.nextInt(5)];
 
           aiResponse =
-              'Batería: $batteryR\nRam: $ramR\nPantalla: $screenR\nAlmacenamiento: $storage\nSistema Operativo: $operatingSystem';
+              'Recomendación IA:\nBatería: $batteryR\nRam: $ramR\nPantalla: $screenR\nAlmacenamiento: $storage\nSistema Operativo: $operatingSystem';
         } catch (e) {
           print('Error cargando recomendaciones locales: $e');
           aiResponse = 'Error cargando recomendaciones locales: $e';
@@ -188,14 +188,16 @@ class HeaderOfPage extends CustomPainter {
 class MyHomePage extends StatelessWidget {
   static const platform = MethodChannel('com.example.device/health');
   final TextEditingController yearController = TextEditingController();
+  final TextEditingController repairController = TextEditingController();
 
-  Future<void> sendYearToPython(BuildContext context, String year) async {
+  Future<void> sendYearToPython(
+      BuildContext context, String year, String repairs) async {
     try {
       final data = {
         'edad_dispositivo': int.parse(year),
         'estado_bateria': 80,
         'rendimiento': 90,
-        'frecuencia_reparacion': 0
+        'frecuencia_reparacion': int.parse(repairs),
       };
 
       final url = Uri.parse('http://192.168.1.7:5000/predict');
@@ -231,6 +233,8 @@ class MyHomePage extends StatelessWidget {
       );
     }
   }
+
+  Future<void> sendRepairsToPython(BuildContext context, String year) async {}
 
   Future<int> getBatteryHealth() async {
     try {
@@ -322,20 +326,35 @@ class MyHomePage extends StatelessWidget {
               },
             ),
             const SizedBox(height: 20),
-            TextField(
-              controller: yearController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: "Cuantos años llevas con el dispositivo",
-                border: OutlineInputBorder(),
-              ),
+            Column(
+              children: [
+                TextField(
+                  controller: yearController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: "Cuántos años llevas con el dispositivo?",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16.0), // Espacio entre los TextFields
+                TextField(
+                  controller: repairController,
+                  decoration: const InputDecoration(
+                    labelText:
+                        "Cuántas veces has hecho reparar tu dispositivo?",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16.0),
             ElevatedButton(
               onPressed: () {
+                final repairs = repairController.text;
                 final year = yearController.text;
-                if (year.isNotEmpty && int.tryParse(year) != null) {
-                  sendYearToPython(context, year);
+                if ((year.isNotEmpty && int.tryParse(year) != null) &&
+                    (repairs.isNotEmpty && int.tryParse(repairs) != null)) {
+                  sendYearToPython(context, year, repairs);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -347,7 +366,7 @@ class MyHomePage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              'Recomendaciones IA\n${appState.aiResponse}',
+              '\n${appState.aiResponse}',
               style: TextStyle(fontSize: 16, color: Colors.black87),
             ),
           ],
